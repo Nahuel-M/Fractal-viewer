@@ -1,73 +1,155 @@
-mod complex;
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use eframe::egui;
-use egui::{TextureOptions, ColorImage, Slider, Vec2, Image, Sense};
+mod fractal;
+mod color;
 
-use crate::complex::Complex;
-#[derive(Default)]
-struct MyApp {
-    width: u32,
-    height: u32,
-    offset: Vec2,
-    scale: f64,
-    texture: Option<(egui::Vec2, egui::TextureHandle)>,
+use std::sync::{Mutex, Arc};
+
+use eframe::{egui, egui_glow};
+use egui::{Response, Vec2, Slider, Grid};
+use fractal::Fractal;
+
+use crate::color::rotate_hue;
+
+
+struct FractalVisualizer {
+    state: State,
+    fractal: Arc<Mutex<Fractal>>,
+    disco_mode: bool,
+    fps: f32,
+}
+#[derive(Default, Clone, Copy)]
+pub struct State{
+    pub offset: Vec2,
+    pub scale: f32,
+    pub iterations: u32,
+    pub start_color: [f32; 3],
+    pub end_color: [f32; 3],
 }
 
-impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Load the image:
-        let image = image::DynamicImage::new_rgb8(self.width, self.height);
-        let mut image_buffer = image.to_rgba8();
-        for (x, y, pixel) in image_buffer.enumerate_pixels_mut(){
-            let x = x as f64 - (image.width() as f64) / 2.;
-            let y = y as f64 - (image.height() as f64) / 2.;
-            
-            let c = Complex::from((x,y)) / self.scale + self.offset.into();
-            let mut z = Complex::from((0.,0.));
-            let mut val : u8 = 0;
-            for i in 0..=50{
-                z = z * z + c;
-                if z.length_squared() > 4. || i == 50{ 
-                    val = i*5;
-                    break;
-                }
-                // if z.real.abs() < 1e-10 && z.imaginary.abs() < 1e-10{
-                //     break;
-                // }
+impl FractalVisualizer{
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        let gl = cc.gl
+            .as_ref()
+            .expect("You need to run eframe with the glow backend");
+        Self {
+            fractal: Arc::new(Mutex::new(Fractal::new(gl))),
+            disco_mode: false,
+            fps: 60.,
+            state: State{
+                offset: Vec2::ZERO,
+                scale: 0.001,
+                iterations: 250,
+                start_color: [0.05, 0.05, 0.2],
+                end_color: [1., 1., 0.],
             }
-            pixel.0 = [val, val, val, 255 ];
         }
-        let size = [image.width() as usize, image.height() as usize];
-        let pixels = image_buffer.into_vec();
-        assert_eq!(size[0] * size[1] * 4, pixels.len());
-        let image = ColorImage::from_rgba_unmultiplied(size, &pixels);
-        // Allocate a texture:
-        let texture = ctx.load_texture("Mandelbrot", image, TextureOptions::LINEAR);
-        
-        let size = egui::Vec2::new(size[0] as f32, size[1] as f32);
-        self.texture = Some((size, texture));
+    }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            if let Some((size, texture)) = self.texture.as_ref() {
-                let response = ui.add(Image::new(texture.id(), *size).sense(Sense::drag()));
-                self.offset -= response.drag_delta() / self.scale as f32;
-            }
-            // ui.add(
-            //     Slider::new(&mut self.scale, 1. ..=10000.)
-            //         .text("Scale")
-            //         .clamp_to_range(true),
-            // );
-            ui.input(|i| self.scale *= 1.2_f64.powf(i.scroll_delta.y as f64 / 100.) )
-        });
+    fn custom_painting(&mut self, ui: &mut egui::Ui, size: Vec2) -> Response {
+        let (rect, response) =
+            ui.allocate_exact_size(size, egui::Sense::drag());
+
+       
+        // Clone locals so we can move them
+        let fractal = self.fractal.clone();
+        let state = self.state;
+        let callback = egui::PaintCallback {
+            rect,
+            callback: std::sync::Arc::new(egui_glow::CallbackFn::new(
+                move |_info, painter| {
+                fractal.lock().unwrap().paint(painter.gl(), &state, size);
+            })),
+        };
+        ui.painter().add(callback);
+
+        response
     }
 }
 
-fn main() {
-    let mut options = eframe::NativeOptions::default();
-    options.fullscreen = true;
-    eframe::run_native(
-        "Mandelbrot", 
-        options, 
-        Box::new(|_| Box::new(MyApp{width: 800, height: 800, offset: Vec2::ZERO, scale: 1000., texture: None}))
-    ).unwrap();
+
+impl eframe::App for FractalVisualizer {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            egui::Frame::canvas(ui.style()).show(ui, |ui| {
+                let response = self.custom_painting(ui, ctx.available_rect().size());
+                self.state.offset += Vec2::new(1., -1.) * 2. * response.drag_delta() * self.state.scale;
+            });
+
+            egui::Window::new("Settings").show(ctx, |ui|{
+                Grid::new("settings").striped(true).show(ui, |ui| {
+                    ui.label("Iterations: ");
+                    ui.add(Slider::new(&mut self.state.iterations, 1..=500).clamp_to_range(false));
+                    ui.end_row();
+
+                    ui.label("Primary colors: ");
+                    ui.horizontal(|ui| {
+                        ui.color_edit_button_rgb(&mut self.state.start_color);
+                        ui.color_edit_button_rgb(&mut self.state.end_color);
+                    });
+                    ui.end_row();
+
+                    ui.label("Disco mode??");
+                    ui.checkbox(&mut self.disco_mode, "");
+                    ui.end_row();
+
+                    ui.input(|i| self.fps = 0.9 * self.fps + 0.1*(1./i.stable_dt));
+                    ui.label("Fps: ");
+                    ui.label(self.fps.round().to_string());
+                    ui.end_row();
+                });
+            });
+            
+            ui.input(|i| self.state.scale /= 1.2_f32.powf(i.scroll_delta.y / 100.));
+            if self.disco_mode{
+                rotate_hue(&mut self.state.start_color, 0.05);
+                rotate_hue(&mut self.state.end_color, 0.05);
+                ctx.request_repaint();
+            }
+        });
+    }
+
+    fn on_exit(&mut self, gl: Option<&glow::Context>) {
+        if let Some(gl) = gl {
+            self.fractal.lock().unwrap().destroy(gl);
+        }
+    }
 }
+
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    console_error_panic_hook::set_once();
+    tracing_wasm::set_as_global_default();
+
+    let web_options = eframe::WebOptions::default();
+    
+     wasm_bindgen_futures::spawn_local(async {
+        eframe::start_web(
+            "canvas", 
+            web_options, 
+            Box::new(|cc| Box::new(FractalVisualizer::new(cc))),
+        )
+        .await
+        .unwrap();
+        
+    });
+}
+
+// #[cfg(not(target_arch = "wasm32"))]
+// fn main() -> eframe::Result<()> {
+//     // Log to stdout (if you run with `RUST_LOG=debug`).
+//     tracing_subscriber::fmt::init();
+
+//     let options = eframe::NativeOptions{
+//         fullscreen: true,
+//         multisampling: 4,
+//         renderer: eframe::Renderer::Glow,
+//         ..Default::default()
+//     };
+
+//     eframe::run_native(
+//         "Mandelbrot",
+//         options,
+//         Box::new(|cc| Box::new(FractalVisualizer::new(cc, 900, 900))),
+//     )
+// }

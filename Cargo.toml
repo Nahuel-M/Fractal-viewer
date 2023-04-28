@@ -3,15 +3,17 @@ name = "mandelbrot"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[check]
+target = "wasm32-unknown-unknown"
+target_arch = "wasm32"
 
 [dependencies]
 egui = "0.21.0"
 eframe = { version = "0.21.3", default-features = false, features = [
-    "default_fonts", # Embed the default egui fonts.
-    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "default_fonts", 
+    "glow",
 ] }
-image = "0.24.6"
+glow = "0.12.1"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
