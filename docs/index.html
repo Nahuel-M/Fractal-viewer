@@ -6,9 +6,9 @@
 
     <title>Fractal viewer</title>
 
-    <script type="module">import init from '/mandelbrot.js';init('/mandelbrot_bg.wasm');</script>
+    <script type="module">import init from '/Fractal-viewer/mandelbrot.js';init('/Fractal-viewer/mandelbrot_bg.wasm');</script>
     <!-- this is the base url relative to which other urls will be constructed. trunk will insert this from the public-url option -->
-    <base href="/">
+    <base href="/Fractal-viewer/">
 
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="white">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#404040">
@@ -100,8 +100,8 @@
 
     </style>
 
-<link rel="preload" href="/mandelbrot_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-<link rel="modulepreload" href="/mandelbrot.js"></head>
+<link rel="preload" href="/Fractal-viewer/mandelbrot_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+<link rel="modulepreload" href="/Fractal-viewer/mandelbrot.js"></head>
 
 <body>
     <canvas id="canvas"></canvas>
