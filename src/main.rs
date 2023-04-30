@@ -78,6 +78,17 @@ impl eframe::App for FractalVisualizer {
             egui::Frame::canvas(ui.style()).inner_margin(0.).outer_margin(0.).show(ui, |ui| {
                 let response = self.custom_painting(ui, ctx.available_rect().size());
                 self.state.offset += Vec2::new(1., -1.) * 2. * response.drag_delta() * self.state.scale;
+
+                // Scaling
+                ui.input(|i| {
+                    let scaling = i.zoom_delta() * 1.2_f32.powf(i.scroll_delta.y / 100.);
+                    if let Some(mouse_position) = i.pointer.hover_pos(){
+                        self.state.scale /= scaling;
+                        let mut mouse_position = mouse_position.to_vec2() / ctx.screen_rect().size() - Vec2::splat(0.5);
+                        mouse_position.y *= -1.; // Flip y to coordinate frame;
+                        self.state.offset += mouse_position * (1. - scaling) * self.state.scale * ctx.screen_rect().size() * 2.;
+                    }
+                });
             });
 
             egui::Window::new("Settings").show(ctx, |ui|{
@@ -102,12 +113,6 @@ impl eframe::App for FractalVisualizer {
                     ui.label(self.fps.round().to_string());
                     ui.end_row();
                 });
-            });
-
-            // Scaling
-            ui.input(|i| {
-                let scaling = i.zoom_delta() * 1.2_f32.powf(i.scroll_delta.y / 100.);
-                self.state.scale /= scaling;
             });
 
             // Disco mode
