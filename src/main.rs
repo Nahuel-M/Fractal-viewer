@@ -6,7 +6,7 @@ mod color;
 use std::sync::{Mutex, Arc};
 
 use eframe::{egui, egui_glow};
-use egui::{Response, Vec2, Slider, Grid};
+use egui::{Response, Vec2, Slider, Grid, Frame};
 use fractal::Fractal;
 
 use crate::color::rotate_hue;
@@ -70,8 +70,11 @@ impl FractalVisualizer{
 
 impl eframe::App for FractalVisualizer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            egui::Frame::canvas(ui.style()).show(ui, |ui| {
+        egui::CentralPanel::default()
+            .frame(Frame::default().inner_margin(0.).outer_margin(0.))
+            .show(ctx, |ui| {
+            
+            egui::Frame::canvas(ui.style()).inner_margin(0.).outer_margin(0.).show(ui, |ui| {
                 let response = self.custom_painting(ui, ctx.available_rect().size());
                 self.state.offset += Vec2::new(1., -1.) * 2. * response.drag_delta() * self.state.scale;
             });
@@ -106,6 +109,7 @@ impl eframe::App for FractalVisualizer {
                 self.state.scale /= scaling;
             });
 
+            // Disco mode
             if self.disco_mode{
                 rotate_hue(&mut self.state.start_color, 0.05);
                 rotate_hue(&mut self.state.end_color, 0.05);
