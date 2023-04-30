@@ -100,7 +100,16 @@ impl eframe::App for FractalVisualizer {
                 });
             });
             
-            ui.input(|i| self.state.scale /= 1.2_f32.powf(i.scroll_delta.y / 100.));
+            // Scaling
+            ui.input(|i| {
+                let mut scaling = i.scroll_delta.y;
+                if let Some(multi_touch) = i.multi_touch(){
+                    scaling *= multi_touch.zoom_delta;
+                }
+
+                self.state.scale /= 1.2_f32.powf(scaling / 100.);
+            });
+
             if self.disco_mode{
                 rotate_hue(&mut self.state.start_color, 0.05);
                 rotate_hue(&mut self.state.end_color, 0.05);
