@@ -1,18 +1,22 @@
 use std::ops::{Mul, Add, Sub};
+
 pub fn rotate_hue(color: &mut [f32; 3], angle: f32){
     let color_vec = Vec3::from(*color);
-    let sqrt_0_3 = f32::sqrt(1./3.);
-    let rotation_axis = Vec3::uniform(sqrt_0_3);
+    let rotation_axis = Vec3::uniform(f32::sqrt(1./3.));
     let parallel = rotation_axis * color_vec.dot(&rotation_axis);
     let orthogonal = color_vec - parallel;
     let w = orthogonal.cross(&rotation_axis) * angle;
-    let x1 = f32::cos(angle) / orthogonal.length();
-    let x2 = f32::sin(angle) / w.length();
+    let x1 = angle.cos() / orthogonal.length();
+    let x2 = angle.sin() / w.length();
     let rotated_orthogonal = (orthogonal * x1 + w * x2) * orthogonal.length();
     let rotated_color = parallel + rotated_orthogonal;
     color[0] = rotated_color.values[0];
     color[1] = rotated_color.values[1];
     color[2] = rotated_color.values[2];
+}
+
+pub fn complementary_color(color: [f32; 3]) -> [f32; 3]{
+    (Vec3::uniform(1.) - color.into()).into()
 }
 
 #[derive(Clone, Copy)]

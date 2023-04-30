@@ -5,6 +5,7 @@ mod color;
 
 use std::sync::{Mutex, Arc};
 
+use color::complementary_color;
 use eframe::{egui, egui_glow};
 use egui::{Response, Vec2, Slider, Grid, Frame};
 use fractal::Fractal;
@@ -112,7 +113,7 @@ impl eframe::App for FractalVisualizer {
             // Disco mode
             if self.disco_mode{
                 rotate_hue(&mut self.state.start_color, 0.05);
-                rotate_hue(&mut self.state.end_color, 0.05);
+                self.state.end_color = complementary_color(self.state.start_color);
                 ctx.request_repaint();
             }
         });
