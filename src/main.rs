@@ -99,15 +99,11 @@ impl eframe::App for FractalVisualizer {
                     ui.end_row();
                 });
             });
-            
+
             // Scaling
             ui.input(|i| {
-                let mut scaling = i.scroll_delta.y;
-                if let Some(multi_touch) = i.multi_touch(){
-                    scaling *= multi_touch.zoom_delta;
-                }
-
-                self.state.scale /= 1.2_f32.powf(scaling / 100.);
+                let scaling = i.zoom_delta() * 1.2_f32.powf(i.scroll_delta.y / 100.);
+                self.state.scale /= scaling;
             });
 
             if self.disco_mode{
