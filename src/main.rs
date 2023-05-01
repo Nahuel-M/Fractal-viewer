@@ -76,7 +76,7 @@ impl eframe::App for FractalVisualizer {
             .show(ctx, |ui| {
             
             egui::Frame::canvas(ui.style()).inner_margin(0.).outer_margin(0.).show(ui, |ui| {
-                let response = self.custom_painting(ui, ctx.available_rect().size());
+                let response = self.custom_painting(ui, ctx.screen_rect().size() * _frame.info().native_pixels_per_point.unwrap());
                 self.state.offset += Vec2::new(1., -1.) * 2. * response.drag_delta() * self.state.scale;
 
                 // Scaling

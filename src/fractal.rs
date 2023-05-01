@@ -71,7 +71,8 @@ impl Fractal {
     }
 
     pub fn paint(&self, gl: &glow::Context, state: &State, dimensions: Vec2) {
-        use glow::HasContext as _;
+        println!("Dimensions: {:?}", dimensions);
+        use glow::HasContext;
         unsafe {
             gl.use_program(Some(self.program));
             gl.uniform_1_i32(
@@ -98,6 +99,11 @@ impl Fractal {
                 state.end_color[0],
                 state.end_color[1],
                 state.end_color[2],
+            );
+            gl.uniform_2_f32(
+                gl.get_uniform_location(self.program, "screenDimensions").as_ref(),
+                dimensions.x,
+                dimensions.y
             );
             gl.draw_arrays(glow::TRIANGLES, 0, 3);
         }
