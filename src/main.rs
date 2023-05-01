@@ -105,7 +105,9 @@ impl eframe::App for FractalVisualizer {
                     ui.end_row();
 
                     ui.label("Disco mode??");
-                    ui.checkbox(&mut self.disco_mode, "");
+                    if ui.checkbox(&mut self.disco_mode, "").clicked() && self.disco_mode{
+                        self.state.start_color = [1.0, 0., 0.,];
+                    };
                     ui.end_row();
 
                     ui.input(|i| self.fps = 0.9 * self.fps + 0.1*(1./i.stable_dt));
