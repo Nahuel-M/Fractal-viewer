@@ -7,7 +7,7 @@ use std::sync::{Mutex, Arc};
 
 use color::complementary_color;
 use eframe::{egui, egui_glow};
-use egui::{Response, Vec2, Slider, Grid, Frame};
+use egui::{Response, Vec2, Slider, Grid, Frame, epaint::Shadow, Visuals, Color32};
 use fractal::Fractal;
 
 use crate::color::rotate_hue;
@@ -71,10 +71,19 @@ impl FractalVisualizer{
 
 impl eframe::App for FractalVisualizer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+
+        ctx.set_visuals(Visuals{
+            window_shadow: Shadow{
+                extrusion: 10.0,
+                color: Color32::from_black_alpha(30),
+                },
+            ..Default::default()
+        });
+
         egui::CentralPanel::default()
             .frame(Frame::default().inner_margin(0.).outer_margin(0.))
             .show(ctx, |ui| {
-            
+
             egui::Frame::canvas(ui.style()).inner_margin(0.).outer_margin(0.).show(ui, |ui| {
                 let response = self.custom_painting(ui, ctx.screen_rect().size() * _frame.info().native_pixels_per_point.unwrap());
                 self.state.offset += Vec2::new(1., -1.) * 2. * response.drag_delta() * self.state.scale;
@@ -91,7 +100,7 @@ impl eframe::App for FractalVisualizer {
                 });
             });
 
-            egui::Window::new("Settings").show(ctx, |ui|{
+            egui::Window::new("Settings").resizable(false).show(ctx, |ui|{
                 Grid::new("settings").striped(true).show(ui, |ui| {
                     ui.label("Iterations: ");
                     ui.add(Slider::new(&mut self.state.iterations, 1..=500).clamp_to_range(false));
@@ -114,6 +123,7 @@ impl eframe::App for FractalVisualizer {
                     ui.label("Fps: ");
                     ui.label(self.fps.round().to_string());
                     ui.end_row();
+                    ui.hyperlink_to("Github", "https://github.com/Nahuel-M/Fractal-viewer");
                 });
             });
 
