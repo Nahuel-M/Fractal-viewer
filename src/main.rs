@@ -47,7 +47,7 @@ impl FractalVisualizer{
         }
     }
 
-    fn custom_painting(&mut self, ui: &mut egui::Ui, size: Vec2) -> Response {
+    fn custom_painting(&mut self, ui: &mut egui::Ui, size: Vec2, pixels_per_point: f32) -> Response {
         let (rect, response) =
             ui.allocate_exact_size(size, egui::Sense::drag());
 
@@ -59,7 +59,7 @@ impl FractalVisualizer{
             rect,
             callback: std::sync::Arc::new(egui_glow::CallbackFn::new(
                 move |_info, painter| {
-                fractal.lock().unwrap().paint(painter.gl(), &state, size);
+                fractal.lock().unwrap().paint(painter.gl(), &state, size*pixels_per_point);
             })),
         };
         ui.painter().add(callback);
@@ -70,7 +70,7 @@ impl FractalVisualizer{
 
 
 impl eframe::App for FractalVisualizer {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
 
         ctx.set_visuals(Visuals{
             window_shadow: Shadow{
@@ -85,7 +85,7 @@ impl eframe::App for FractalVisualizer {
             .show(ctx, |ui| {
 
             egui::Frame::canvas(ui.style()).inner_margin(0.).outer_margin(0.).show(ui, |ui| {
-                let response = self.custom_painting(ui, ctx.screen_rect().size() * _frame.info().native_pixels_per_point.unwrap());
+                let response = self.custom_painting(ui, ctx.screen_rect().size(), frame.info().native_pixels_per_point.unwrap());
                 self.state.offset += Vec2::new(1., -1.) * 2. * response.drag_delta() * self.state.scale;
 
                 // Scaling
