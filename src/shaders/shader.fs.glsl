@@ -21,7 +21,7 @@ void main() {
     for (int i = 0; i < iterations; i++) {
         z = complex_mul(z, z) + c;
         if (z.x*z.x + z.y*z.y > 4.0) {
-            result = float(i) / float(iterations);
+            result = float(i+1) / float(iterations+1);
             break;
         }
     }
